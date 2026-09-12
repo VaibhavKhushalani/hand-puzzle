@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Hand-Puzzle — Gesture Capture</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=IBM+Plex+Mono:wght@300;400;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="css/styles.css" />
+  </head>
+  <body>
+    <div id="app">
+      <div id="stage">
+        <video id="webcam" playsinline autoplay muted></video>
+        <canvas id="sceneCanvas"></canvas>
+
+        <div class="hud-top">
+          <div class="brand">HAND·PUZZLE <small>Hand-Frame Capture</small></div>
+          <div class="status-pill">
+            <span id="statusDot" class="status-dot"></span>
+            <span id="statusText">starting camera…</span>
+          </div>
+        </div>
+
+        <div id="progressBadge" class="progress-badge">
+          <span id="progressText">0 / 9 pieces placed</span>
+        </div>
+
+        <div id="loadingOverlay">
+          <div class="loader-text" id="loaderText">
+            loading HandLandmarker model…
+          </div>
+          <div class="loader-bar"></div>
+          <button type="button" id="loaderRetry" class="loader-retry hidden">
+            retry
+          </button>
+        </div>
+
+        <div id="errorBanner"></div>
+      </div>
+
+      <aside id="gallery">
+        <div class="gallery-head">
+          <span class="gallery-title">Photo Strip</span>
+          <span class="gallery-count" id="galleryCount">0 / 3</span>
+        </div>
+
+        <div class="strip-complete-msg" id="stripCompleteMsg">
+          strip complete — download or reset to continue
+        </div>
+
+        <div id="galleryStrip" class="gallery-strip">
+          <div class="gallery-empty" id="galleryEmpty">
+            Your completed puzzles will appear here.
+          </div>
+        </div>
+
+        <div class="gallery-actions">
+          <button
+            type="button"
+            id="downloadStripBtn"
+            class="gallery-action-btn"
+            disabled
+          >
+            download strip
+          </button>
+          <button
+            type="button"
+            id="resetAllBtn"
+            class="gallery-action-btn gallery-action-btn--danger"
+          >
+            reset all
+          </button>
+        </div>
+      </aside>
+    </div>
+
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>
