@@ -62,6 +62,9 @@ const statusText = document.getElementById("statusText");
 const loadingOverlay = document.getElementById("loadingOverlay");
 const loaderText = document.getElementById("loaderText");
 const loaderRetry = document.getElementById("loaderRetry");
+const tutorialOverlay = document.getElementById("tutorialOverlay");
+const tutorialClose = document.getElementById("tutorialClose");
+const tutorialStart = document.getElementById("tutorialStart");
 const errorBanner = document.getElementById("errorBanner");
 const progressBadge = document.getElementById("progressBadge");
 const progressText = document.getElementById("progressText");
@@ -1376,6 +1379,16 @@ function resetLoaderUI() {
   errorBanner.style.display = "none";
 }
 
+function closeTutorial() {
+  if (!tutorialOverlay) return;
+  tutorialOverlay.classList.add("hidden");
+}
+
+function showTutorialIfNeeded() {
+  if (!tutorialOverlay) return;
+  tutorialOverlay.classList.remove("hidden");
+}
+
 async function boot() {
   resetLoaderUI();
 
@@ -1419,6 +1432,16 @@ async function boot() {
 loaderRetry.addEventListener("click", () => {
   boot();
 });
+
+if (tutorialClose) {
+  tutorialClose.addEventListener("click", closeTutorial);
+}
+
+if (tutorialStart) {
+  tutorialStart.addEventListener("click", closeTutorial);
+}
+
+showTutorialIfNeeded();
 
 if (sidebarToggle) {
   sidebarToggle.addEventListener("click", toggleSidebar);
