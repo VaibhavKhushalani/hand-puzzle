@@ -15,6 +15,17 @@
   <body>
     <div id="app">
       <div id="stage">
+        <button
+          type="button"
+          id="sidebarToggle"
+          class="sidebar-toggle"
+          aria-label="Open photo strip"
+          aria-expanded="true"
+        >
+          <span aria-hidden="true">☰</span>
+          <span>strip</span>
+        </button>
+
         <video id="webcam" playsinline autoplay muted></video>
         <canvas id="sceneCanvas"></canvas>
 
@@ -45,6 +56,14 @@
 
       <aside id="gallery">
         <div class="gallery-head">
+          <button
+            type="button"
+            id="sidebarClose"
+            class="gallery-close"
+            aria-label="Close photo strip"
+          >
+            ×
+          </button>
           <span class="gallery-title">Photo Strip</span>
           <span class="gallery-count" id="galleryCount">0 / 3</span>
         </div>

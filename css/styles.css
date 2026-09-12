@@ -27,7 +27,7 @@ body {
   margin: 0;
   padding: 0;
   width: 100vw;
-  height: 100vh;
+  height: 100dvh;
   background: linear-gradient(180deg, #071226 0%, #071a2e 60%);
   overflow: hidden;
   font-family: var(--sans);
@@ -35,15 +35,18 @@ body {
 }
 
 #app {
+  position: relative;
   display: flex;
   width: 100vw;
-  height: 100vh;
+  height: 100dvh;
 }
 
 #stage {
   position: relative;
   flex: 1 1 auto;
-  height: 100vh;
+  width: 100%;
+  height: 100dvh;
+  min-width: 0;
   background: linear-gradient(180deg, rgba(0, 0, 0, 0.12), rgba(0, 0, 0, 0.38));
   overflow: hidden;
 }
@@ -300,10 +303,35 @@ canvas#sceneCanvas {
   text-align: center;
 }
 
+.sidebar-toggle {
+  position: absolute;
+  top: 18px;
+  left: 18px;
+  z-index: 55;
+  display: none;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 1px solid rgba(245, 197, 24, 0.45);
+  background: rgba(10, 10, 8, 0.7);
+  color: var(--signal);
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.sidebar-toggle span:first-child {
+  font-size: 13px;
+  line-height: 1;
+}
+
 #gallery {
   flex: 0 0 var(--gallery-width);
   width: var(--gallery-width);
-  height: 100vh;
+  height: 100dvh;
   background: var(--gallery-bg);
   color: var(--gallery-ink);
   border-left: 1px solid var(--gallery-border);
@@ -312,6 +340,21 @@ canvas#sceneCanvas {
   overflow: hidden;
   box-shadow: -12px 0 40px rgba(3, 8, 15, 0.28);
   border-radius: 10px 0 0 10px;
+  transition: transform 0.24s ease;
+}
+
+.gallery-close {
+  display: none;
+  appearance: none;
+  border: 1px solid var(--gallery-border);
+  background: transparent;
+  color: var(--gallery-ink-soft);
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
 }
 
 .gallery-head {
@@ -319,6 +362,7 @@ canvas#sceneCanvas {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 10px;
   padding: 14px 14px 10px;
   border-bottom: 1px solid var(--gallery-border);
 }
@@ -460,4 +504,45 @@ canvas#sceneCanvas {
   background: var(--danger);
   border-color: var(--danger);
   color: #fff;
+}
+
+@media (max-width: 900px) {
+  #app {
+    width: 100%;
+  }
+
+  .sidebar-toggle {
+    display: inline-flex;
+  }
+
+  #gallery {
+    position: absolute;
+    top: 0;
+    right: 0;
+    z-index: 50;
+    width: min(88vw, 360px);
+    border-left: none;
+    border-radius: 0;
+    box-shadow: -14px 0 36px rgba(3, 8, 15, 0.4);
+    transform: translateX(110%);
+  }
+
+  body.sidebar-open #gallery {
+    transform: translateX(0);
+  }
+
+  .gallery-close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .gallery-head {
+    padding-right: 10px;
+  }
+
+  .gallery-title {
+    flex: 1;
+    text-align: center;
+  }
 }

@@ -72,6 +72,8 @@ const galleryCount = document.getElementById("galleryCount");
 const downloadStripBtn = document.getElementById("downloadStripBtn");
 const resetAllBtn = document.getElementById("resetAllBtn");
 const stripCompleteMsg = document.getElementById("stripCompleteMsg");
+const sidebarToggle = document.getElementById("sidebarToggle");
+const sidebarClose = document.getElementById("sidebarClose");
 
 let appState = "tracking";
 
@@ -174,6 +176,21 @@ function downloadPhotoStrip() {
   }, "image/png");
 }
 
+function setSidebarOpen(isOpen) {
+  const isMobile = window.matchMedia("(max-width: 900px)").matches;
+  if (!isMobile) return;
+
+  document.body.classList.toggle("sidebar-open", isOpen);
+  if (sidebarToggle) {
+    sidebarToggle.setAttribute("aria-expanded", String(isOpen));
+  }
+}
+
+function toggleSidebar() {
+  const shouldOpen = !document.body.classList.contains("sidebar-open");
+  setSidebarOpen(shouldOpen);
+}
+
 function resetEverything() {
   galleryEntries.length = 0;
   galleryStrip.innerHTML = "";
@@ -184,6 +201,7 @@ function resetEverything() {
   }
   hideStripComplete();
   updateStripDownloadAvailability();
+  setSidebarOpen(false);
   resetPuzzleOnly();
   statusText.textContent = "all reset";
 }
@@ -252,7 +270,7 @@ window.addEventListener("resize", fitCanvasToWindow);
 
 async function initWebcam() {
   if (!navigator.mediaDevices?.getUserMedia) {
-    throw new Error("Este navegador no soporta getUserMedia.");
+    throw new Error("This browser does not support getUserMedia.");
   }
   const stream = await navigator.mediaDevices.getUserMedia({
     video: {
@@ -599,11 +617,64 @@ function isNearOwnCell(piece, box, tileW, tileH) {
   return Math.sqrt(dx * dx + dy * dy) < tolerance;
 }
 
+function rectIntersectsCell(piece, row, col, box, tileW, tileH) {
+  const cellX = box.x + col * tileW;
+  const cellY = box.y + row * tileH;
+  const pieceRight = piece.x + piece.w;
+  const pieceBottom = piece.y + piece.h;
+
+  return !(
+    pieceRight <= cellX ||
+    piece.x >= cellX + tileW ||
+    pieceBottom <= cellY ||
+    piece.y >= cellY + tileH
+  );
+}
+
+function getCellForPoint(px, py, box, tileW, tileH) {
+  const relativeX = px - box.x;
+  const relativeY = py - box.y;
+
+  return {
+    row: Math.min(GRID - 1, Math.max(0, Math.floor(relativeY / tileH))),
+    col: Math.min(GRID - 1, Math.max(0, Math.floor(relativeX / tileW))),
+  };
+}
+
+function findOccupantInCell(targetRow, targetCol, box, tileW, tileH, piece) {
+  return puzzle.pieces.find((candidate) => {
+    if (candidate === piece || candidate.displacing) return false;
+    return rectIntersectsCell(
+      candidate,
+      targetRow,
+      targetCol,
+      box,
+      tileW,
+      tileH,
+    );
+  });
+}
+
 function reconcilePlacedState(box, tileW, tileH) {
   if (!box || !puzzle.pieces.length) return false;
   for (const piece of puzzle.pieces) {
     if (piece.displacing || piece.dragging) continue;
-    piece.placed = isNearOwnCell(piece, box, tileW, tileH);
+    const targetCell = getCellForPoint(
+      piece.x + piece.w / 2,
+      piece.y + piece.h / 2,
+      box,
+      tileW,
+      tileH,
+    );
+    const sameCellOccupant = findOccupantInCell(
+      targetCell.row,
+      targetCell.col,
+      box,
+      tileW,
+      tileH,
+      piece,
+    );
+    piece.placed = isNearOwnCell(piece, box, tileW, tileH) && !sameCellOccupant;
   }
   return puzzle.pieces.every((p) => p.placed);
 }
@@ -619,14 +690,14 @@ function displaceCellOccupant(piece, targetRow, targetCol, box, tileW, tileH) {
   const cellX = box.x + targetCol * tileW;
   const cellY = box.y + targetRow * tileH;
 
-  const occupant = puzzle.pieces.find((p) => {
-    if (p === piece || p.displacing) return false;
-    const cx = p.x + p.w / 2;
-    const cy = p.y + p.h / 2;
-    return (
-      cx >= cellX && cx < cellX + tileW && cy >= cellY && cy < cellY + tileH
-    );
-  });
+  const occupant = findOccupantInCell(
+    targetRow,
+    targetCol,
+    box,
+    tileW,
+    tileH,
+    piece,
+  );
   if (!occupant) return;
 
   if (
@@ -643,15 +714,11 @@ function displaceCellOccupant(piece, targetRow, targetCol, box, tileW, tileH) {
   for (let row = 0; row < GRID; row++) {
     for (let col = 0; col < GRID; col++) {
       if (row === targetRow && col === targetCol) continue;
-      const cx0 = box.x + col * tileW;
-      const cy0 = box.y + row * tileH;
-      const taken = puzzle.pieces.some((p) => {
+      const occupied = puzzle.pieces.some((p) => {
         if (p === occupant || p === piece || p.displacing) return false;
-        const cx = p.x + p.w / 2;
-        const cy = p.y + p.h / 2;
-        return cx >= cx0 && cx < cx0 + tileW && cy >= cy0 && cy < cy0 + tileH;
+        return rectIntersectsCell(p, row, col, box, tileW, tileH);
       });
-      if (!taken) freeCells.push({ row, col });
+      if (!occupied) freeCells.push({ row, col });
     }
   }
 
@@ -735,30 +802,71 @@ function handleDragForHand(handLabel, pinching, indexPx) {
     if (drag.activeHand === handLabel && drag.piece) {
       const piece = drag.piece;
       piece.dragging = false;
-      if (isNearOwnCell(piece, puzzle.boardBox, puzzle.tileW, puzzle.tileH)) {
-        snapPieceToCell(piece, puzzle.boardBox, puzzle.tileW, puzzle.tileH);
+      const box = puzzle.boardBox;
+
+      if (isNearOwnCell(piece, box, puzzle.tileW, puzzle.tileH)) {
+        snapPieceToCell(piece, box, puzzle.tileW, puzzle.tileH);
       } else {
         clampPieceToBoard(piece);
-        const box = puzzle.boardBox;
         const cx = piece.x + piece.w / 2;
         const cy = piece.y + piece.h / 2;
-        const dropCol = Math.min(
-          GRID - 1,
-          Math.max(0, Math.floor((cx - box.x) / puzzle.tileW)),
+        const dropCell = getCellForPoint(
+          cx,
+          cy,
+          box,
+          puzzle.tileW,
+          puzzle.tileH,
         );
-        const dropRow = Math.min(
-          GRID - 1,
-          Math.max(0, Math.floor((cy - box.y) / puzzle.tileH)),
+        const occupant = findOccupantInCell(
+          dropCell.row,
+          dropCell.col,
+          box,
+          puzzle.tileW,
+          puzzle.tileH,
+          piece,
         );
+
+        if (occupant) {
+          displaceCellOccupant(
+            piece,
+            dropCell.row,
+            dropCell.col,
+            box,
+            puzzle.tileW,
+            puzzle.tileH,
+          );
+        } else {
+          piece.x = box.x + dropCell.col * puzzle.tileW;
+          piece.y = box.y + dropCell.row * puzzle.tileH;
+        }
+      }
+
+      const targetCell = getCellForPoint(
+        piece.x + piece.w / 2,
+        piece.y + piece.h / 2,
+        box,
+        puzzle.tileW,
+        puzzle.tileH,
+      );
+      const overlappingPiece = findOccupantInCell(
+        targetCell.row,
+        targetCell.col,
+        box,
+        puzzle.tileW,
+        puzzle.tileH,
+        piece,
+      );
+      if (overlappingPiece) {
         displaceCellOccupant(
           piece,
-          dropRow,
-          dropCol,
+          targetCell.row,
+          targetCell.col,
           box,
           puzzle.tileW,
           puzzle.tileH,
         );
       }
+
       drag.activeHand = null;
       drag.piece = null;
       puzzle.solved = reconcilePlacedState(
@@ -1312,6 +1420,14 @@ loaderRetry.addEventListener("click", () => {
   boot();
 });
 
+if (sidebarToggle) {
+  sidebarToggle.addEventListener("click", toggleSidebar);
+}
+
+if (sidebarClose) {
+  sidebarClose.addEventListener("click", () => setSidebarOpen(false));
+}
+
 if (downloadStripBtn) {
   downloadStripBtn.addEventListener("click", downloadPhotoStrip);
   updateStripDownloadAvailability();
@@ -1325,5 +1441,14 @@ if (resetAllBtn) {
     if (confirmed) resetEverything();
   });
 }
+
+window.addEventListener("resize", () => {
+  if (!window.matchMedia("(max-width: 900px)").matches) {
+    document.body.classList.remove("sidebar-open");
+    if (sidebarToggle) {
+      sidebarToggle.setAttribute("aria-expanded", "false");
+    }
+  }
+});
 
 boot();
